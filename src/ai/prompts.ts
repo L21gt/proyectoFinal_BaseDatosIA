@@ -2,26 +2,19 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export const classificationPrompt = ChatPromptTemplate.fromMessages([
-  ["system", `You are a strict JSON data extractor.
+  ["system", `You are a strict JSON data extractor. Return EXACTLY the structure of these examples.
 
-RULES FOR "source":
-- If question contains "qué decir", "prospecto", "tiempo", "guion" -> source MUST be "rag".
-- If question contains "campañas", "activas", "agentes" -> source MUST be "database".
+EXAMPLE 1 ("¿Qué campañas activas están disponibles?"):
+{{ "source": "database", "intent": "active campaigns", "confidence": 0.9, "entities": {{ "table": "campaigns", "leadStatus": null, "interestLevel": null, "agentName": null, "campaignStatus": "active", "documentTopic": null }} }}
 
-EXAMPLE FOR RAG QUESTION ("Que debo decir si el prospecto dice que no tiene tiempo?"):
-{{
-  "source": "rag",
-  "intent": "find script",
-  "confidence": 0.9,
-  "entities": {{
-    "table": null,
-    "leadStatus": null,
-    "interestLevel": null,
-    "agentName": null,
-    "campaignStatus": null,
-    "documentTopic": "objections"
-  }}
-}}
+EXAMPLE 2 ("¿Qué debo decir si el prospecto dice que no tiene tiempo?"):
+{{ "source": "rag", "intent": "find script", "confidence": 0.9, "entities": {{ "table": null, "leadStatus": null, "interestLevel": null, "agentName": null, "campaignStatus": null, "documentTopic": "objections" }} }}
+
+EXAMPLE 3 ("Que prospectos de alto interes necesitan seguimiento y que guion debo usar?"):
+{{ "source": "hybrid", "intent": "prospects and script", "confidence": 0.9, "entities": {{ "table": "leads", "leadStatus": null, "interestLevel": "alto", "agentName": null, "campaignStatus": null, "documentTopic": "guion" }} }}
+
+EXAMPLE 4 ("Explicame que es un prospecto de ventas."):
+{{ "source": "general", "intent": "explain", "confidence": 0.9, "entities": {{ "table": null, "leadStatus": null, "interestLevel": null, "agentName": null, "campaignStatus": null, "documentTopic": null }} }}
 
 FORMAT INSTRUCTIONS:
 {format_instructions}`],
@@ -30,10 +23,8 @@ FORMAT INSTRUCTIONS:
 
 export const answerPrompt = ChatPromptTemplate.fromMessages([
   ["system", `Eres un asistente de call center. 
-  
-Contexto Base de Datos: {databaseContext}
-Contexto Documentos: {documentContext}
-
-REGLA ESTRICTA: Responde basándote SOLO en los contextos. Si los contextos están vacíos o dicen "error", DEBES responder EXACTAMENTE: "No tengo contexto suficiente para responder." NO inventes información, no repitas frases.`],
+Datos: {databaseContext}
+Docs: {documentContext}
+Responde la pregunta basándote en la información.`],
   ["human", "{question}"]
 ]);
