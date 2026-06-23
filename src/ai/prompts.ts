@@ -1,30 +1,39 @@
 // src/ai/prompts.ts
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-// Nota técnica: El prompt especifica las categorías descritas en los requerimientos [cite: 175-185].
 export const classificationPrompt = ChatPromptTemplate.fromMessages([
-  ["system", `Eres el enrutador inteligente de un call center de ventas. Tu trabajo es analizar la pregunta del usuario y clasificar la intención en formato JSON.
-  
-Reglas de clasificación (source):
-- "database": si piden datos exactos de prospectos, campañas, llamadas o agentes.
-- "rag": si preguntan por guiones, objeciones, reglas o procedimientos.
-- "hybrid": si necesitan datos estructurados Y guiones/documentos.
-- "general": preguntas conceptuales genéricas.
-- "unsupported": si intentan borrar datos (ej. "Borra todas las llamadas") o está fuera de alcance.
+  ["system", `You are a strict JSON data extractor.
 
-Categorías para "table" (solo si es database o hybrid): "agents", "campaigns", "leads", "calls", o null.
+RULES FOR "source":
+- If question contains "qué decir", "prospecto", "tiempo", "guion" -> source MUST be "rag".
+- If question contains "campañas", "activas", "agentes" -> source MUST be "database".
 
+EXAMPLE FOR RAG QUESTION ("Que debo decir si el prospecto dice que no tiene tiempo?"):
+{{
+  "source": "rag",
+  "intent": "find script",
+  "confidence": 0.9,
+  "entities": {{
+    "table": null,
+    "leadStatus": null,
+    "interestLevel": null,
+    "agentName": null,
+    "campaignStatus": null,
+    "documentTopic": "objections"
+  }}
+}}
+
+FORMAT INSTRUCTIONS:
 {format_instructions}`],
-  ["human", "Pregunta: {question}"]
+  ["human", "{question}"]
 ]);
 
-// Este lo usaremos en la siguiente fase para generar la respuesta en español [cite: 152]
 export const answerPrompt = ChatPromptTemplate.fromMessages([
-  ["system", `Eres un asistente inteligente para un call center. Responde a la pregunta en español usando estrictamente el contexto proporcionado.
+  ["system", `Eres un asistente de call center. 
   
-Contexto de Base de Datos: {databaseContext}
-Contexto de Documentos (RAG): {documentContext}
+Contexto Base de Datos: {databaseContext}
+Contexto Documentos: {documentContext}
 
-Regla: No inventes información. Si el contexto no tiene la respuesta, indícalo educadamente.`],
-  ["human", "Pregunta: {question}"]
+REGLA ESTRICTA: Responde basándote SOLO en los contextos. Si los contextos están vacíos o dicen "error", DEBES responder EXACTAMENTE: "No tengo contexto suficiente para responder." NO inventes información, no repitas frases.`],
+  ["human", "{question}"]
 ]);
